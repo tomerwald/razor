@@ -6,6 +6,7 @@ const (
 
 const (
 	// BEP 3
+	KeepAlive     byte = 99
 	Choke         byte = 0
 	Unchoke       byte = 1
 	Interested    byte = 2

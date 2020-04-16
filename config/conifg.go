@@ -8,4 +8,5 @@ type PeerConfig struct {
 	InfoHash []byte
 	PeerID   []byte
 	PieceCount int
+	IdleTimeout int
 }

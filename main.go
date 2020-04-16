@@ -15,16 +15,18 @@ type PeerManger struct {
 func (pm *PeerManger) handleClient(con net.Conn) {
 	fmt.Printf("Handling client %s\r\n", con.RemoteAddr().String())
 	p := peer_protocol.PeerConnection{
-		PeerID:     pm.PeerConfig.PeerID,
-		InfoHash:   pm.PeerConfig.InfoHash,
 		Conn:       con,
-		PieceCount: pm.PeerConfig.PieceCount,
+		PeerConfig: pm.PeerConfig,
 	}
+	defer con.Close()
 	if p.PerformHandshake() {
 		for p.Active {
-			p.MessageCycle()
+			err := p.MessageCycle()
+			if err != nil {
+				break
+			}
 		}
-		fmt.Printf("Finished serving client %s", con.RemoteAddr().String())
+		fmt.Printf("Finished serving client %s\r\n", con.RemoteAddr().String())
 	} else {
 
 	}
@@ -55,9 +57,10 @@ func main() {
 		MaxConnections: 3,
 	}
 	pc := config.PeerConfig{
-		InfoHash:   InfoHash,
-		PeerID:     PeerID,
-		PieceCount: 128,
+		InfoHash:    InfoHash,
+		PeerID:      PeerID,
+		PieceCount:  128,
+		IdleTimeout: 10,
 	}
 	pm := PeerManger{
 		ManConfig:  mc,
