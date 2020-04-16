@@ -8,31 +8,36 @@ import (
 )
 
 type PeerManger struct {
-	Config config.RazorConifg
+	ManConfig  config.ManagerConfig
+	PeerConfig config.PeerConfig
 }
 
-func (pm PeerManger) handleClient(con net.Conn) {
+func (pm *PeerManger) handleClient(con net.Conn) {
 	fmt.Printf("Handling client %s\r\n", con.RemoteAddr().String())
 	p := peer_protocol.PeerConnection{
-		PeerID:   pm.Config.PeerID,
-		InfoHash: pm.Config.InfoHash,
-		Conn:     con,
+		PeerID:     pm.PeerConfig.PeerID,
+		InfoHash:   pm.PeerConfig.InfoHash,
+		Conn:       con,
+		PieceCount: pm.PeerConfig.PieceCount,
 	}
 	if p.PerformHandshake() {
-		p.Choke()
+		for p.Active {
+			p.MessageCycle()
+		}
+		fmt.Printf("Finished serving client %s", con.RemoteAddr().String())
 	} else {
 
 	}
 }
 
-func (pm PeerManger) Start() {
-	fmt.Println("Getting connections\r\n")
-	l, err := net.Listen("tcp", pm.Config.Address)
+func (pm *PeerManger) Start() {
+	fmt.Println("Getting connections")
+	l, err := net.Listen("tcp", pm.ManConfig.Address)
 	if err != nil {
 		fmt.Println("Failed listening for connections")
 		return
 	} else {
-		for i := 0; i < 3; i++ {
+		for i := 0; i < pm.ManConfig.MaxConnections; i++ {
 			conn, err := l.Accept()
 			if err != nil {
 				continue
@@ -45,11 +50,18 @@ func main() {
 	InfoHash := []byte{0xd5, 0x5f, 0x1e, 0x84, 0x0f, 0x1b, 0xd6,
 		0x57, 0x6e, 0xad, 0x67, 0xa4, 0xd0, 0x4e, 0x5d, 0x6e, 0xa2, 0x94, 0x41, 0x4b}
 	PeerID := []byte("-UW109K-LMYpj9A)8X0R")
-	c := config.RazorConifg{
-		Address:  "127.0.0.1:6888",
-		InfoHash: InfoHash,
-		PeerID:   PeerID,
+	mc := config.ManagerConfig{
+		Address:        "127.0.0.1:6888",
+		MaxConnections: 3,
 	}
-	pm := PeerManger{c}
+	pc := config.PeerConfig{
+		InfoHash:   InfoHash,
+		PeerID:     PeerID,
+		PieceCount: 128,
+	}
+	pm := PeerManger{
+		ManConfig:  mc,
+		PeerConfig: pc,
+	}
 	pm.Start()
 }
