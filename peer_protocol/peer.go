@@ -12,7 +12,7 @@ import (
 
 type PeerConnection struct {
 	Conn         net.Conn
-	remotePeerID []byte
+	RemotePeerID []byte
 	Active       bool
 	PeerConfig   config.PeerConfig
 	AmChoking    bool
@@ -80,10 +80,10 @@ func (p *PeerConnection) ReceiveHandshake() bool {
 		fmt.Println("Failed to read bytes from socket")
 	}
 	proto := string(buf[:20])
-	p.remotePeerID = buf[27:47]
+	p.RemotePeerID = buf[27:47]
 	InfoHash := buf[47:67]
 	if p.IsHandshakeValid(proto, InfoHash) {
-		fmt.Printf("Peer id: %s\r\n", string(p.remotePeerID))
+		fmt.Printf("Peer id: %s\r\n", string(p.RemotePeerID))
 		p.Active = true
 		return true
 	} else {
@@ -109,8 +109,7 @@ func (p *PeerConnection) ReceiveMessage() (Message, error) {
 	if messageLength == 0 {
 		return Message{Type: KeepAlive}, nil
 	}
-	messageBuffer, err := p.readSocket(messageLength, 5)
-	if err == nil {
+	if messageBuffer, err := p.readSocket(messageLength, 5); err == nil {
 		return readMessage(messageBuffer), err
 	} else {
 		return Message{}, err
@@ -118,8 +117,7 @@ func (p *PeerConnection) ReceiveMessage() (Message, error) {
 }
 
 func (p *PeerConnection) sendMessage(message Message) {
-	_, err := p.Conn.Write(message.Buffer())
-	if err != nil {
+	if _, err := p.Conn.Write(message.Buffer()); err != nil {
 		fmt.Println("Failed sending message")
 		p.Active = false
 	}
@@ -127,16 +125,16 @@ func (p *PeerConnection) sendMessage(message Message) {
 
 func (p *PeerConnection) Choke() {
 	m := Message{
-		Type:    Choke,
-		Payload: nil,
+		Type: Choke,
 	}
 	p.sendMessage(m)
 }
-func (p *PeerConnection) handleChoke() {
-	p.PeerChoking = true
-}
-func (p *PeerConnection) handleUnchoke(){
-	p.PeerChoking = false
+
+func (p *PeerConnection) UnChoke() {
+	m := Message{
+		Type: Unchoke,
+	}
+	p.sendMessage(m)
 }
 
 func (p *PeerConnection) BitField() {
@@ -154,25 +152,6 @@ func (p *PeerConnection) PerformHandshake() bool {
 		return true
 	} else {
 		return false
-	}
-}
-
-func (p *PeerConnection) MessageCycle() error {
-	m, err := p.ReceiveMessage()
-	if err == nil {
-		switch m.Type {
-		case Bitfield:
-			p.BitField()
-		case Choke:
-
-		default:
-			fmt.Printf("Got unknown message type: %d\r\n", m.Type)
-
-		}
-		fmt.Printf("Got message of type %d\r\n", m.Type)
-		return nil
-	} else {
-		return err
 	}
 }
 

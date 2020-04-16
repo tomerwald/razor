@@ -2,7 +2,7 @@ package main
 
 import (
 	"./config"
-	"./peer_protocol"
+	"./razor"
 	"fmt"
 	"net"
 )
@@ -14,18 +14,11 @@ type PeerManger struct {
 
 func (pm *PeerManger) handleClient(con net.Conn) {
 	fmt.Printf("Handling client %s\r\n", con.RemoteAddr().String())
-	p := peer_protocol.PeerConnection{
-		Conn:       con,
-		PeerConfig: pm.PeerConfig,
-	}
-	defer con.Close()
-	if p.PerformHandshake() {
-		for p.Active {
-			err := p.MessageCycle()
-			if err != nil {
-				break
-			}
-		}
+
+	rc := razor.NewRazorClient(con, pm.PeerConfig)
+	defer rc.Peer.Disconnect()
+	if rc.Peer.PerformHandshake() {
+		rc.Serve()
 		fmt.Printf("Finished serving client %s\r\n", con.RemoteAddr().String())
 	} else {
 
