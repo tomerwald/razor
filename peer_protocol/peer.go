@@ -11,12 +11,13 @@ import (
 )
 
 type PeerConnection struct {
-	Conn         net.Conn
-	RemotePeerID []byte
-	Active       bool
-	PeerConfig   config.PeerConfig
-	AmChoking    bool
-	PeerChoking  bool
+	Conn           net.Conn
+	RemotePeerID   []byte
+	Active         bool
+	PeerConfig     config.PeerConfig
+	AmChoking      bool
+	PeerChoking    bool
+	PeerInterested bool
 }
 
 func (p *PeerConnection) readSocket(len uint32, timeout int) ([]byte, error) {
@@ -116,34 +117,47 @@ func (p *PeerConnection) ReceiveMessage() (Message, error) {
 	}
 }
 
-func (p *PeerConnection) sendMessage(message Message) {
-	if _, err := p.Conn.Write(message.Buffer()); err != nil {
+func (p *PeerConnection) SendMessage(messages ...Message) {
+	messageBuffer := []byte{}
+	for _, msg := range messages {
+		messageBuffer = append(messageBuffer, msg.Buffer()...)
+	}
+	if _, err := p.Conn.Write(messageBuffer); err != nil {
 		fmt.Println("Failed sending message")
 		p.Active = false
 	}
 }
-
-func (p *PeerConnection) Choke() {
-	m := Message{
+func (p *PeerConnection) Choke() Message {
+	return Message{
 		Type: Choke,
 	}
-	p.sendMessage(m)
 }
 
-func (p *PeerConnection) UnChoke() {
-	m := Message{
+func (p *PeerConnection) UnChoke() Message {
+	return Message{
 		Type: Unchoke,
 	}
-	p.sendMessage(m)
 }
 
-func (p *PeerConnection) BitField() {
+func (p *PeerConnection) BitField() Message {
 	payload := GenerateRandomBytes(p.PeerConfig.PieceCount)
-	m := Message{
+	return Message{
 		Type:    Bitfield,
 		Payload: payload,
 	}
-	p.sendMessage(m)
+}
+func (p *PeerConnection) Interested() Message {
+	return Message{
+		Type: Interested,
+	}
+}
+func (p *PeerConnection) Have(index uint32) Message {
+	indexField := make([]byte, 4)
+	binary.BigEndian.PutUint32(indexField, index)
+	return Message{
+		Type:    Have,
+		Payload: indexField,
+	}
 }
 
 func (p *PeerConnection) PerformHandshake() bool {
