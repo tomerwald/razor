@@ -47,13 +47,15 @@ func main() {
 	PeerID := []byte("-UW109K-LMYpj9A)8X0R")
 	mc := config.ManagerConfig{
 		Address:        "127.0.0.1:6888",
-		MaxConnections: 3,
+		MaxConnections: 10,
 	}
 	pc := config.PeerConfig{
 		InfoHash:    InfoHash,
 		PeerID:      PeerID,
 		PieceCount:  128,
 		IdleTimeout: 10,
+		BlockSize:   16384,
+		PieceSize:   51 * 16384,
 	}
 	pm := PeerManger{
 		ManConfig:  mc,

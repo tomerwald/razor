@@ -159,7 +159,16 @@ func (p *PeerConnection) Have(index uint32) Message {
 		Payload: indexField,
 	}
 }
-
+func (p *PeerConnection) Request(PieceIndex uint32, fromOffset uint32) Message {
+	indexField := make([]byte, 12)
+	binary.BigEndian.PutUint32(indexField[0:4], PieceIndex)
+	binary.BigEndian.PutUint32(indexField[4:8], fromOffset)
+	binary.BigEndian.PutUint32(indexField[8:12], p.PeerConfig.BlockSize)
+	return Message{
+		Type:    Request,
+		Payload: indexField,
+	}
+}
 func (p *PeerConnection) PerformHandshake() bool {
 	if p.ReceiveHandshake() {
 		p.SendHandshake()

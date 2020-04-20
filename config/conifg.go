@@ -9,4 +9,6 @@ type PeerConfig struct {
 	PeerID   []byte
 	PieceCount int
 	IdleTimeout int
+	BlockSize uint32
+	PieceSize uint32
 }
