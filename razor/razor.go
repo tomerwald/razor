@@ -3,33 +3,35 @@ package razor
 import (
 	"../config"
 	"../peer_protocol"
+	"./commands"
 	"encoding/binary"
 	"log"
 	"net"
 )
 
-type RazorClient struct {
+type Client struct {
 	Peer              peer_protocol.PeerConnection
 	CurrentPiece      uint32
 	CurrentBlockIndex uint32
+	CommandOutput     []byte
 }
 
-func (r *RazorClient) handleChoke() {
+func (r *Client) handleChoke() {
 	r.Peer.PeerChoking = true
 }
-func (r *RazorClient) handleUnChoke() {
+func (r *Client) handleUnChoke() {
 	r.Peer.PeerChoking = false
 }
-func (r *RazorClient) handleInterested() {
+func (r *Client) handleInterested() {
 	r.Peer.PeerInterested = true
 }
-func (r *RazorClient) handleNotInterested() {
+func (r *Client) handleNotInterested() {
 	r.Peer.PeerInterested = false
 }
-func (r *RazorClient) ChangePiece(haveMsg peer_protocol.Message) {
+func (r *Client) ChangePiece(haveMsg peer_protocol.Message) {
 	r.CurrentPiece = binary.BigEndian.Uint32(haveMsg.Payload)
 }
-func (r *RazorClient) RequestNextBlock(amount int) {
+func (r *Client) RequestNextBlock(amount int) {
 	var messages []peer_protocol.Message
 	for i := 0; i < amount; i++ {
 		messages = append(messages, r.Peer.Request(r.CurrentPiece, r.CurrentBlockIndex))
@@ -42,7 +44,7 @@ func (r *RazorClient) RequestNextBlock(amount int) {
 	}
 	r.Peer.SendMessage(messages...)
 }
-func (r *RazorClient) MessageCycle() (peer_protocol.Message, error) {
+func (r *Client) MessageCycle() (peer_protocol.Message, error) {
 	if m, err := r.Peer.ReceiveMessage(); err == nil {
 		switch m.Type {
 		case peer_protocol.Bitfield:
@@ -58,11 +60,10 @@ func (r *RazorClient) MessageCycle() (peer_protocol.Message, error) {
 		case peer_protocol.Have:
 			r.ChangePiece(m)
 		case peer_protocol.Piece:
-			p := ReadPiece(m.Payload)
-			ReadCommand(p.Data)
+			p := peer_protocol.ReadPiece(m.Payload)
+			r.CommandOutput, _ = commands.ReadCommand(p.Data)
 		default:
 			log.Printf("Got unknown message type: %d\r\n", m.Type)
-
 		}
 		log.Printf("Got message of type %d\r\n", m.Type)
 		return m, nil
@@ -71,7 +72,7 @@ func (r *RazorClient) MessageCycle() (peer_protocol.Message, error) {
 	}
 }
 
-func (r *RazorClient) Serve() {
+func (r *Client) Serve() {
 	for r.Peer.Active {
 		_, err := r.MessageCycle()
 		if err != nil {
@@ -84,8 +85,9 @@ func (r *RazorClient) Serve() {
 	}
 }
 
-func NewRazorClient(conn net.Conn, pc config.PeerConfig) RazorClient {
-	return RazorClient{peer_protocol.PeerConnection{
+func NewRazorClient(conn net.Conn, pc config.PeerConfig) Client {
+	var out []byte
+	return Client{peer_protocol.PeerConnection{
 		Conn:        conn,
 		Active:      false,
 		PeerConfig:  pc,
@@ -94,5 +96,6 @@ func NewRazorClient(conn net.Conn, pc config.PeerConfig) RazorClient {
 	},
 		0,
 		0,
+		out,
 	}
 }
