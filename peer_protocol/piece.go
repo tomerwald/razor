@@ -6,9 +6,20 @@ import (
 )
 
 type PieceMessage struct {
-	Index      uint32
-	BlockIndex uint32
-	Data       []byte
+	PieceIndex  uint32
+	BlockOffset uint32
+	Data        []byte
+}
+
+func (p *PieceMessage) Message() Message {
+	metadataField := make([]byte, 8)
+	binary.BigEndian.PutUint32(metadataField[0:4], p.PieceIndex)
+	binary.BigEndian.PutUint32(metadataField[4:8], p.BlockOffset)
+	metadataField = append(metadataField, p.Data...)
+	return Message{
+		Type:    Piece,
+		Payload: metadataField,
+	}
 }
 
 func ReadPiece(buf []byte) PieceMessage {
@@ -18,8 +29,8 @@ func ReadPiece(buf []byte) PieceMessage {
 	BlockIndex := binary.BigEndian.Uint32(BlockIndexField)
 	log.Printf("got piece: %x block %x\r\n", pieceIndex, BlockIndex)
 	return PieceMessage{
-		Index:      pieceIndex,
-		BlockIndex: BlockIndex,
-		Data:       buf[8:],
+		PieceIndex:  pieceIndex,
+		BlockOffset: BlockIndex,
+		Data:        buf[8:],
 	}
 }

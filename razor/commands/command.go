@@ -2,30 +2,23 @@ package commands
 
 import (
 	"encoding/binary"
-	"encoding/json"
-	"log"
 )
 
-type ExecCommand struct {
-	ExecutablePath string
-	Params         string
+type Command struct {
+	Type    uint32
+	Payload []byte
 }
 
-func (ec *ExecCommand) run() []byte {
-	log.Printf("%s %s\r\n", ec.ExecutablePath, ec.Params)
-	var out []byte
-	return out
+func (c *Command) Buffer() []byte {
+	metadata := make([]byte, 8)
+	binary.BigEndian.PutUint32(metadata[0:4], c.Type)
+	binary.BigEndian.PutUint32(metadata[4:8], uint32(len(c.Payload)))
+	return append(metadata, c.Payload...)
+
 }
 
-func RunExec(payload []byte) ([]byte, error) {
-	var m ExecCommand
-	err := json.Unmarshal(payload, &m)
-	if err != nil {
-		log.Fatal(err)
-		return nil, err
-	} else {
-		return m.run(), err
-	}
+func (c *Command) BufferLen() int {
+	return 8 + len(c.Payload)
 }
 
 func ReadCommand(buf []byte) ([]byte, error) {

@@ -14,7 +14,7 @@ type PeerConnection struct {
 	Conn           net.Conn
 	RemotePeerID   []byte
 	Active         bool
-	PeerConfig     config.PeerConfig
+	Config         config.PeerConfig
 	AmChoking      bool
 	PeerChoking    bool
 	PeerInterested bool
@@ -55,8 +55,8 @@ func (p *PeerConnection) SendHandshake() {
 	ProtocolType := []byte(Protocol)           // const
 	reserved := []byte{0, 0, 0, 0, 0, 0, 0, 0} // all zero 8 bytes
 	buf := append(ProtocolType, reserved...)
-	buf = append(buf, p.PeerConfig.PeerID...)
-	buf = append(buf, p.PeerConfig.InfoHash...)
+	buf = append(buf, p.Config.PeerID...)
+	buf = append(buf, p.Config.InfoHash...)
 	_, err := p.Conn.Write(buf)
 	if err != nil {
 		fmt.Printf("Error while handshaking %s", err.Error())
@@ -67,7 +67,7 @@ func (p *PeerConnection) SendHandshake() {
 func (p *PeerConnection) IsHandshakeValid(protocol string, hash []byte) bool {
 	if protocol != protocol {
 		return false
-	} else if bytes.Compare(hash, p.PeerConfig.InfoHash) == 0 {
+	} else if bytes.Compare(hash, p.Config.InfoHash) == 0 {
 		return false
 	} else {
 		return true
@@ -93,7 +93,7 @@ func (p *PeerConnection) ReceiveHandshake() bool {
 }
 
 func (p *PeerConnection) ReceiveLength() (uint32, error) {
-	lengthBuffer, err := p.readSocket(4, p.PeerConfig.IdleTimeout)
+	lengthBuffer, err := p.readSocket(4, p.Config.IdleTimeout)
 	messageLength := binary.BigEndian.Uint32(lengthBuffer)
 	if err == nil {
 		return messageLength, nil
@@ -140,7 +140,7 @@ func (p *PeerConnection) UnChoke() Message {
 }
 
 func (p *PeerConnection) BitField() Message {
-	payload := GenerateRandomBytes(p.PeerConfig.PieceCount)
+	payload := GenerateRandomBytes(p.Config.PieceCount)
 	return Message{
 		Type:    Bitfield,
 		Payload: payload,
@@ -163,7 +163,7 @@ func (p *PeerConnection) Request(PieceIndex uint32, fromOffset uint32) Message {
 	indexField := make([]byte, 12)
 	binary.BigEndian.PutUint32(indexField[0:4], PieceIndex)
 	binary.BigEndian.PutUint32(indexField[4:8], fromOffset)
-	binary.BigEndian.PutUint32(indexField[8:12], p.PeerConfig.BlockSize)
+	binary.BigEndian.PutUint32(indexField[8:12], p.Config.BlockSize)
 	return Message{
 		Type:    Request,
 		Payload: indexField,
