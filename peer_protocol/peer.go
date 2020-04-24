@@ -18,6 +18,7 @@ type PeerConnection struct {
 	AmChoking      bool
 	PeerChoking    bool
 	PeerInterested bool
+	bitfield       []byte
 }
 
 func (p *PeerConnection) readSocket(len uint32, timeout int) ([]byte, error) {

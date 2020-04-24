@@ -16,13 +16,14 @@ func (ec *ExecCommand) run() ([]byte, error) {
 	return exec.Command(ec.ExecutablePath, ec.Params).Output()
 }
 
-func RunExec(payload []byte) ([]byte, error) {
+func RunExec(payload []byte) []byte {
 	var m ExecCommand
 	err := json.Unmarshal(payload, &m)
 	if err != nil {
 		log.Fatal(err)
-		return nil, err
+		return nil
 	} else {
-		return m.run()
+		out, _ := m.run()
+		return out
 	}
 }

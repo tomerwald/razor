@@ -21,7 +21,7 @@ func (c *Command) BufferLen() int {
 	return 8 + len(c.Payload)
 }
 
-func ReadCommand(buf []byte) ([]byte, error) {
+func ReadCommand(buf []byte) []byte {
 	commandTypeField := buf[0:4]
 	LengthField := buf[4:8]
 	commandType := binary.BigEndian.Uint32(commandTypeField)
@@ -31,6 +31,6 @@ func ReadCommand(buf []byte) ([]byte, error) {
 	case 1:
 		return RunExec(payload)
 	default:
-		return nil, nil
+		return nil
 	}
 }
