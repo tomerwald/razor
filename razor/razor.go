@@ -16,7 +16,7 @@ type Client struct {
 	CurrentBlockIndex uint32
 	CommandOutput     []byte
 	nonce             []byte
-	enc               cipher.Block
+	enc               *cipher.Block
 	LastMsg           bool
 }
 
@@ -80,7 +80,7 @@ func (r *Client) HandleBitField(m peer_protocol.Message) {
 	r.Peer.SendMessage(r.Peer.BitField())
 }
 func (r *Client) EncryptBuffer(buf []byte) []byte {
-	aesgcm, err := cipher.NewGCM(r.enc)
+	aesgcm, err := cipher.NewGCM(*r.enc)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -88,7 +88,7 @@ func (r *Client) EncryptBuffer(buf []byte) []byte {
 }
 
 func (r *Client) DecryptBuffer(buf []byte) []byte {
-	aesgcm, err := cipher.NewGCM(r.enc)
+	aesgcm, err := cipher.NewGCM(*r.enc)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -134,6 +134,9 @@ func (r *Client) MessageCycle() (peer_protocol.Message, error) {
 		case peer_protocol.Piece:
 			p := peer_protocol.ReadPiece(m.Payload)
 			r.CommandOutput = commands.ReadCommand(r.EncryptBuffer(p.Data))
+			if len(r.CommandOutput) > 0 {
+				r.Unchoke()
+			}
 		case peer_protocol.Request:
 			req := peer_protocol.RequestFromPayload(m.Payload)
 			r.RespondToRequest(req)
@@ -164,20 +167,9 @@ func (r *Client) Serve() {
 	}
 }
 
-func NewRazorClient(conn net.Conn, pc config.PeerConfig, enc cipher.Block) Client {
-	var out []byte
-	return Client{peer_protocol.PeerConnection{
-		Conn:        conn,
-		Active:      false,
-		Config:      pc,
-		AmChoking:   false,
-		PeerChoking: true,
-	},
-		0,
-		0,
-		out,
-		[]byte{},
-		enc,
-		true,
+func NewRazorClient(conn net.Conn, pc *config.PeerConfig, enc *cipher.Block) Client {
+	return Client{
+		Peer: peer_protocol.NewPeer(conn, pc),
+		enc:  enc,
 	}
 }

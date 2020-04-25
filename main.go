@@ -18,14 +18,10 @@ type PeerManger struct {
 
 func (pm *PeerManger) handleClient(con net.Conn) {
 	fmt.Printf("Handling client %s\r\n", con.RemoteAddr().String())
-
-	rc := razor.NewRazorClient(con, pm.PeerConfig, pm.Cipher)
+	rc := razor.NewRazorClient(con, &pm.PeerConfig, &pm.Cipher)
 	defer rc.Peer.Disconnect()
 	if rc.Peer.PerformHandshake() {
 		rc.Serve()
-		fmt.Printf("Finished serving client %s\r\n", con.RemoteAddr().String())
-	} else {
-
 	}
 }
 

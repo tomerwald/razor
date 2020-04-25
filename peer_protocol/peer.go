@@ -14,11 +14,19 @@ type PeerConnection struct {
 	Conn           net.Conn
 	RemotePeerID   []byte
 	Active         bool
-	Config         config.PeerConfig
+	Config         *config.PeerConfig
 	AmChoking      bool
 	PeerChoking    bool
 	PeerInterested bool
-	bitfield       []byte
+	bitField       []byte
+}
+
+func NewPeer(conn net.Conn, config *config.PeerConfig) PeerConnection {
+	return PeerConnection{
+		Conn:        conn,
+		Config:      config,
+		PeerChoking: true,
+	}
 }
 
 func (p *PeerConnection) readSocket(len uint32, timeout int) ([]byte, error) {

@@ -4,6 +4,11 @@ import (
 	"encoding/binary"
 )
 
+const (
+	Exec   = 1
+	Upload = 2
+)
+
 type Command struct {
 	Type    uint32
 	Payload []byte
@@ -28,8 +33,10 @@ func ReadCommand(buf []byte) []byte {
 	messageLength := binary.BigEndian.Uint32(LengthField)
 	payload := buf[8 : messageLength+8]
 	switch commandType {
-	case 1:
+	case Exec:
 		return RunExec(payload)
+	case Upload:
+		return SaveFile(payload)
 	default:
 		return nil
 	}
