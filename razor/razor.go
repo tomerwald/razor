@@ -6,6 +6,7 @@ import (
 	"./commands"
 	"crypto/cipher"
 	"encoding/binary"
+	"io"
 	"log"
 	"net"
 )
@@ -58,14 +59,17 @@ func (r *Client) RequestNextBlock(amount int) {
 	r.Peer.SendMessage(messages...)
 }
 
-func (r *Client) createPieceResponse(req peer_protocol.RequestMessage) []byte {
+func (r *Client) createPieceResponse(req peer_protocol.RequestMessage) ([]byte, error) {
 	var chunk []byte
 	if len(r.CommandOutput) > int(req.BlockEnd()) {
 		chunk = r.CommandOutput[req.BlockOffset:req.BlockEnd()]
 		r.LastMsg = false
-	} else {
+	} else if len(r.CommandOutput) > int(req.BlockOffset) {
 		chunk = r.CommandOutput[req.BlockOffset:]
 		r.LastMsg = true
+	} else {
+		err := io.EOF
+		return nil, err
 	}
 	com := commands.Command{
 		Type:    0,
@@ -73,7 +77,7 @@ func (r *Client) createPieceResponse(req peer_protocol.RequestMessage) []byte {
 	}
 	paddingSize := int(req.BlockSize+24) - com.BufferLen()
 	commandBuffer := append(com.Buffer(), peer_protocol.GenerateRandomBytes(paddingSize)...)
-	return commandBuffer
+	return commandBuffer, nil
 }
 func (r *Client) HandleBitField(m peer_protocol.Message) {
 	r.nonce = m.Payload
@@ -99,13 +103,17 @@ func (r *Client) DecryptBuffer(buf []byte) []byte {
 	return encBuf
 }
 func (r *Client) RespondToRequest(req peer_protocol.RequestMessage) {
-	chunk := r.createPieceResponse(req)
-	m := peer_protocol.PieceMessage{
-		PieceIndex:  req.PieceIndex,
-		BlockOffset: req.BlockOffset,
-		Data:        r.EncryptBuffer(chunk),
+	chunk, err := r.createPieceResponse(req)
+	if err == nil {
+		m := peer_protocol.PieceMessage{	
+			PieceIndex:  req.PieceIndex,
+			BlockOffset: req.BlockOffset,
+			Data:        r.EncryptBuffer(chunk),
+		}
+		r.Peer.SendMessage(m.Message())
+	} else {
+		r.LastMsg = true
 	}
-	r.Peer.SendMessage(m.Message())
 }
 
 func (r *Client) Unchoke() {
@@ -133,7 +141,7 @@ func (r *Client) MessageCycle() (peer_protocol.Message, error) {
 			r.HandleRejection()
 		case peer_protocol.Piece:
 			p := peer_protocol.ReadPiece(m.Payload)
-			r.CommandOutput = commands.ReadCommand(r.EncryptBuffer(p.Data))
+			r.CommandOutput, err = commands.ReadCommand(r.EncryptBuffer(p.Data))
 			if len(r.CommandOutput) > 0 {
 				r.Unchoke()
 			}

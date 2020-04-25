@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"os"
 )
 
@@ -14,40 +13,36 @@ type UploadCommand struct {
 	Append   bool
 }
 
-func (u *UploadCommand) createFile(data []byte) {
-	err := ioutil.WriteFile(u.FilePath, data, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
+func (u *UploadCommand) createFile(data []byte) error {
+	return ioutil.WriteFile(u.FilePath, data, 0644)
 }
-func (u *UploadCommand) appendToFile(data []byte) {
+func (u *UploadCommand) appendToFile(data []byte) error {
 	file, err := os.OpenFile(u.FilePath, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer file.Close()
 	if _, err := file.Write(data); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func (u *UploadCommand) Save() []byte {
-	binData, _ := hex.DecodeString(u.Data)
-	if u.Append {
-		u.appendToFile(binData)
-	} else {
-		u.createFile(binData)
+		return err
 	}
 	return nil
 }
 
-func SaveFile(payload []byte) []byte {
+func (u *UploadCommand) Save() error {
+	binData, _ := hex.DecodeString(u.Data)
+	if u.Append {
+		return u.appendToFile(binData)
+	} else {
+		return u.createFile(binData)
+	}
+}
+
+func SaveFile(payload []byte) ([]byte, error) {
 	var u UploadCommand
 	err := json.Unmarshal(payload, &u)
 	if err != nil {
-		log.Fatal(err)
-		return nil
+		return nil, err
 	} else {
-		return u.Save()
+		return nil, u.Save()
 	}
 }

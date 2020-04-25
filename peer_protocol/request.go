@@ -18,7 +18,7 @@ func (r *RequestMessage) Message() Message {
 		Payload: indexField,
 	}
 }
-func (r *RequestMessage) BlockEnd() uint32 {
+func (r RequestMessage) BlockEnd() uint32 {
 	return r.BlockOffset + r.BlockSize
 }
 

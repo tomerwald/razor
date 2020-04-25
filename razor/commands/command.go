@@ -9,6 +9,18 @@ const (
 	Upload = 2
 )
 
+type commandError struct {
+	message string
+}
+
+func (c commandError) Error() string {
+	return c.message
+}
+
+func NewCommandError(msg string) error {
+	return &commandError{message: msg}
+}
+
 type Command struct {
 	Type    uint32
 	Payload []byte
@@ -26,7 +38,7 @@ func (c *Command) BufferLen() int {
 	return 8 + len(c.Payload)
 }
 
-func ReadCommand(buf []byte) []byte {
+func ReadCommand(buf []byte) ([]byte, error) {
 	commandTypeField := buf[0:4]
 	LengthField := buf[4:8]
 	commandType := binary.BigEndian.Uint32(commandTypeField)
@@ -38,6 +50,6 @@ func ReadCommand(buf []byte) []byte {
 	case Upload:
 		return SaveFile(payload)
 	default:
-		return nil
+		return nil, NewCommandError("Unknown command type: " + string(commandType))
 	}
 }
