@@ -10,6 +10,10 @@ type Tunnel struct {
 	Timeout int
 }
 
+func (t *Tunnel) Close() error {
+	return t.con.Close()
+}
+
 func NewTunnel(com *Command) (Tunnel, error) {
 	var stc StartTunnelCommand
 	err := json.Unmarshal(com.Payload, &stc)

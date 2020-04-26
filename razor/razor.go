@@ -142,6 +142,8 @@ func (r *Client) HandleCommand(com *commands.Command) error {
 		} else {
 			r.CommandOutput = []byte("Tunneling")
 		}
+	case commands.StopTunnel:
+		r.tun.Close()
 	default:
 		return commands.NewCommandError("Unknown command type: " + string(com.Type))
 	}
