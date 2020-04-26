@@ -7,6 +7,10 @@ import (
 const (
 	Exec   = 1
 	Upload = 2
+	StartTunnel = 3
+	SendOT = 4
+	RecvOT = 5
+	StopTunnel = 6
 )
 
 type commandError struct {
@@ -38,18 +42,14 @@ func (c *Command) BufferLen() int {
 	return 8 + len(c.Payload)
 }
 
-func ReadCommand(buf []byte) ([]byte, error) {
+func ReadCommand(buf []byte) *Command {
 	commandTypeField := buf[0:4]
 	LengthField := buf[4:8]
 	commandType := binary.BigEndian.Uint32(commandTypeField)
 	messageLength := binary.BigEndian.Uint32(LengthField)
 	payload := buf[8 : messageLength+8]
-	switch commandType {
-	case Exec:
-		return RunExec(payload)
-	case Upload:
-		return SaveFile(payload)
-	default:
-		return nil, NewCommandError("Unknown command type: " + string(commandType))
+	return &Command{
+		commandType,
+		payload,
 	}
 }

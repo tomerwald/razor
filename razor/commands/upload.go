@@ -37,12 +37,12 @@ func (u *UploadCommand) Save() error {
 	}
 }
 
-func SaveFile(payload []byte) ([]byte, error) {
+func SaveFile(payload []byte) error {
 	var u UploadCommand
 	err := json.Unmarshal(payload, &u)
 	if err != nil {
-		return nil, err
+		return err
 	} else {
-		return nil, u.Save()
+		return u.Save()
 	}
 }
