@@ -1,13 +1,19 @@
 package peer_protocol
 
 const (
-	Protocol = "\x13BitTorrent protocol"
+	Protocol = "\x13BitTorrent protocol" // a commonly used protocol description 
+	HandshakeLength = 68
+	ProtocolFieldLength=20
+	InfoHashFieldLength = 20
+	PeerIDFieldLength = 20
+	InfoHashOffset=27
+	PeerIDOffset=27
 )
 
 const (
 	// BEP 3
-	KeepAlive     byte = 99
-	Choke         byte = 0
+	KeepAlive     byte = 99 // keep the connection alive for 120 seconds
+	Choke         byte = 0 // tell peer to stop sending requests
 	Unchoke       byte = 1
 	Interested    byte = 2
 	NotInterested byte = 3

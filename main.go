@@ -6,7 +6,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/sha256"
-	"fmt"
+	"log"
 	"net"
 )
 
@@ -17,7 +17,7 @@ type PeerManger struct {
 }
 
 func (pm *PeerManger) handleClient(con net.Conn) {
-	fmt.Printf("Handling client %s\r\n", con.RemoteAddr().String())
+	log.Printf("Handling client %s\r\n", con.RemoteAddr().String())
 	rc := razor.NewRazorClient(con, &pm.PeerConfig, &pm.Cipher)
 	defer rc.Peer.Disconnect()
 	if rc.Peer.PerformHandshake() {
@@ -26,10 +26,10 @@ func (pm *PeerManger) handleClient(con net.Conn) {
 }
 
 func (pm *PeerManger) Start() {
-	fmt.Println("Getting connections")
+	log.Println("Getting connections")
 	l, err := net.Listen("tcp", pm.ManConfig.Address)
 	if err != nil {
-		fmt.Println("Failed listening for connections")
+		log.Println("Failed listening for connections")
 		return
 	} else {
 		for i := 0; i < pm.ManConfig.MaxConnections; i++ {

@@ -3,6 +3,7 @@ package peer_protocol
 import "encoding/binary"
 
 type RequestMessage struct {
+	// Message type used to ask from a block of data (command in this case)
 	PieceIndex  uint32
 	BlockOffset uint32
 	BlockSize   uint32

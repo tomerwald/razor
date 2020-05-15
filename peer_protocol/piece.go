@@ -6,12 +6,14 @@ import (
 )
 
 type PieceMessage struct {
+	// a message containing data for a requested piece
 	PieceIndex  uint32
 	BlockOffset uint32
 	Data        []byte
 }
 
 func (p *PieceMessage) Message() Message {
+	// create a message of Piece type
 	metadataField := make([]byte, 8)
 	binary.BigEndian.PutUint32(metadataField[0:4], p.PieceIndex)
 	binary.BigEndian.PutUint32(metadataField[4:8], p.BlockOffset)

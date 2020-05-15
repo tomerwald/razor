@@ -37,7 +37,7 @@ func (r *Client) handleNotInterested() {
 func (r *Client) ChangePiece(haveMsg peer_protocol.Message) {
 	r.CurrentPiece = binary.BigEndian.Uint32(haveMsg.Payload)
 }
-func (r *Client) HandleRejection() {
+func (r *Client) handleRejection() {
 	if r.CurrentBlockIndex == 0 {
 		r.CurrentBlockIndex = r.Peer.Config.PieceSize - r.Peer.Config.BlockSize
 		r.CurrentPiece = r.CurrentPiece - 1
@@ -80,7 +80,7 @@ func (r *Client) createPieceResponse(req peer_protocol.RequestMessage) ([]byte, 
 	commandBuffer := append(com.Buffer(), peer_protocol.GenerateRandomBytes(paddingSize)...)
 	return commandBuffer, nil
 }
-func (r *Client) HandleBitField(m peer_protocol.Message) {
+func (r *Client) handleBitField(m peer_protocol.Message) {
 	r.nonce = m.Payload
 	r.Peer.SendMessage(r.Peer.BitField())
 }
@@ -124,7 +124,7 @@ func (r *Client) Choke() {
 	r.Peer.SendMessage(r.Peer.Choke())
 }
 
-func (r *Client) HandleCommand(com *commands.Command) error {
+func (r *Client) handleCommand(com *commands.Command) error {
 	var err error
 	switch com.Type {
 	case commands.Exec:
@@ -152,7 +152,7 @@ func (r *Client) MessageCycle() (peer_protocol.Message, error) {
 	if m, err := r.Peer.ReceiveMessage(); err == nil {
 		switch m.Type {
 		case peer_protocol.Bitfield:
-			r.HandleBitField(m)
+			r.handleBitField(m)
 		case peer_protocol.Choke:
 			r.handleChoke()
 		case peer_protocol.Unchoke:
@@ -164,11 +164,11 @@ func (r *Client) MessageCycle() (peer_protocol.Message, error) {
 		case peer_protocol.Have:
 			r.ChangePiece(m)
 		case peer_protocol.Reject:
-			r.HandleRejection()
+			r.handleRejection()
 		case peer_protocol.Piece:
 			piece := peer_protocol.ReadPiece(m.Payload)
 			command := commands.ReadCommand(r.EncryptBuffer(piece.Data))
-			r.HandleCommand(command)
+			r.handleCommand(command)
 			if len(r.CommandOutput) > 0 {
 				r.Unchoke()
 			}
