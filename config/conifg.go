@@ -1,9 +1,14 @@
 package config
 
-type RazorConifg struct {
+type ManagerConfig struct {
 	Address  string
+	MaxConnections int
+}
+type PeerConfig struct {
 	InfoHash []byte
 	PeerID   []byte
-	MaxConnections int
 	PieceCount int
+	IdleTimeout int
+	BlockSize uint32
+	PieceSize uint32
 }
