@@ -1,14 +1,15 @@
 package razor
 
 import (
-	"../config"
-	"../peer_protocol"
-	"./commands"
 	"crypto/cipher"
 	"encoding/binary"
 	"io"
 	"log"
 	"net"
+
+	"../config"
+	"../peer_protocol"
+	"./commands"
 )
 
 type Client struct {

@@ -1,13 +1,16 @@
 package main
 
 import (
-	"./config"
-	"./razor"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/sha1"
 	"crypto/sha256"
 	"log"
 	"net"
+
+	"./config"
+	"./razor"
+	"./tracker"
 )
 
 type PeerManger struct {
@@ -41,18 +44,39 @@ func (pm *PeerManger) Start() {
 		}
 	}
 }
+func (pm *PeerManger) StartBC() {
+	for _, trackerIP := range pm.ManConfig.Trackers {
+		log.Printf("Quering tracker: %s\n", trackerIP)
+		con, ResError := net.Dial("udp", trackerIP)
+		tc := tracker.TrackerClient{con, 9, 0}
+		if ResError == nil {
+			err := tc.Connect()
+			if err == nil {
+				log.Printf("Sending announce: %s\n", trackerIP)
+				tc.Announce(pm.PeerConfig.InfoHash, pm.PeerConfig.PeerID)
+			}
+		}
+		address := "127.0.0.1:6882"
+		con, serr := net.Dial("tcp", address)
+		if serr != nil {
+			log.Printf("error connecting to peer: %s", address)
+		} else {
+			pm.handleClient(con)
+		}
+	}
+}
 func main() {
-	InfoHash := []byte{0xd5, 0x5f, 0x1e, 0x84, 0x0f, 0x1b, 0xd6,
-		0x57, 0x6e, 0xad, 0x67, 0xa4, 0xd0, 0x4e, 0x5d, 0x6e, 0xa2, 0x94, 0x41, 0x4b}
+	InfoHash := sha1.Sum([]byte("test"))
 	PeerID := []byte("-UW109K-LMYpj9A)8X0R")
 	key := sha256.Sum256([]byte("key"))
 	enc, _ := aes.NewCipher(key[:])
 	mc := config.ManagerConfig{
 		Address:        "127.0.0.1:6888",
 		MaxConnections: 100,
+		Trackers:       []string{"tracker.tiny-vps.com:6969"},
 	}
 	pc := config.PeerConfig{
-		InfoHash:    InfoHash,
+		InfoHash:    InfoHash[:],
 		PeerID:      PeerID,
 		PieceCount:  128,
 		IdleTimeout: 120,
@@ -64,5 +88,5 @@ func main() {
 		PeerConfig: pc,
 		Cipher:     enc,
 	}
-	pm.Start()
+	pm.StartBC()
 }
