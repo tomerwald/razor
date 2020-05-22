@@ -2,9 +2,10 @@ package requests
 
 import (
 	"encoding/binary"
+	"fmt"
 	"math/rand"
 	"net"
-	"fmt"
+	"strings"
 )
 
 type AnnouncementError struct {
@@ -34,10 +35,10 @@ func (ar *AnnounceRequest) MarshalBinary() []byte {
 	commonBuffer = append(commonBuffer, ar.InfoHash...)
 	commonBuffer = append(commonBuffer, ar.PeerID...)
 	paramBuffer := make([]byte, 42)
-	binary.BigEndian.PutUint64(paramBuffer[0:], 1024)  //downloaded
-	binary.BigEndian.PutUint64(paramBuffer[8:], 1024)  // left
+	binary.BigEndian.PutUint64(paramBuffer[0:], 1024)   //downloaded
+	binary.BigEndian.PutUint64(paramBuffer[8:], 1024)   // left
 	binary.BigEndian.PutUint64(paramBuffer[16:], 0)     // uploaded
-	binary.BigEndian.PutUint32(paramBuffer[24:], 0)     // event
+	binary.BigEndian.PutUint32(paramBuffer[24:], 2)     // event - start
 	binary.BigEndian.PutUint32(paramBuffer[28:], 0)     // IP (commonly unimplemented)
 	binary.BigEndian.PutUint32(paramBuffer[32:], 0)     // key
 	binary.BigEndian.PutUint32(paramBuffer[36:], 50)    // num want
@@ -60,16 +61,28 @@ type AnnounceResponse struct {
 	Peers    []string
 }
 
-func parseIpField(buf []byte) []string {
+func parseIPField(buf []byte) []string {
 	addresses := make([]string, len(buf)/6)
 	for i := 0; i < len(buf)/6; i++ {
 		ip := net.IP(buf[i*6 : (i*6)+4])
 		port := binary.BigEndian.Uint16(buf[(i*6)+4 : (i+1)*6])
-		if port > 0{
+		if port > 0 {
 			addresses[i] = fmt.Sprintf("%s:%d", ip.String(), port)
 		}
 	}
 	return addresses
+}
+func (ar *AnnounceResponse) GetControllerPeers() []string {
+	var conntrollers []string
+	for _, ip := range ar.Peers {
+		address := strings.Split(ip, ":")
+		if len(address) > 1 {
+			if address[1] != "19238" { // magic razor port
+				conntrollers = append(conntrollers, ip)
+			}
+		}
+	}
+	return conntrollers
 }
 func UnmarshalAnnounceResponse(buf []byte) (AnnounceResponse, error) {
 	// read a scrape response, contianing the seeders, completed and leechers
@@ -83,7 +96,7 @@ func UnmarshalAnnounceResponse(buf []byte) (AnnounceResponse, error) {
 	Interval := binary.BigEndian.Uint32(buf[8:12])
 	leechers := binary.BigEndian.Uint32(buf[12:16])
 	seeders := binary.BigEndian.Uint32(buf[16:20])
-	addresses := parseIpField(buf[20:])
+	addresses := parseIPField(buf[20:])
 	return AnnounceResponse{
 		Leechers: leechers,
 		Interval: Interval,
