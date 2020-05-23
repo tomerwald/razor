@@ -161,7 +161,7 @@ func (p *PeerConnection) BitField() Message {
 	}
 }
 func (p *PeerConnection) Interested() Message {
-	// create an Interested message 
+	// create an Interested message
 	return Message{
 		Type: Interested,
 	}
@@ -190,8 +190,8 @@ func (p *PeerConnection) Request(PieceIndex uint32, fromOffset uint32) Message {
 }
 func (p *PeerConnection) PerformHandshake() bool {
 	// wait for peer to send a handshake then respond
+	p.SendHandshake()
 	if p.ReceiveHandshake() {
-		p.SendHandshake()
 		return true
 	} else {
 		return false

@@ -1,7 +1,7 @@
 package peer_protocol
 
 import "encoding/binary"
-
+	
 type Message struct {
 	// a representation of a bittorrent message
 	Type    byte

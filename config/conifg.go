@@ -1,14 +1,17 @@
 package config
 
+import "time"
+
 type ManagerConfig struct {
-	Address  string
-	MaxConnections int
+	Address          string
+	AnnounceInterval time.Duration
+	Trackers         []string
 }
 type PeerConfig struct {
-	InfoHash []byte
-	PeerID   []byte
-	PieceCount int
+	InfoHash    []byte
+	PeerID      []byte
+	PieceCount  int
 	IdleTimeout int
-	BlockSize uint32
-	PieceSize uint32
+	BlockSize   uint32
+	PieceSize   uint32
 }
