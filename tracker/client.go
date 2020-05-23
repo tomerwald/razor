@@ -6,20 +6,20 @@ import (
 	"./requests"
 )
 
-type TrackerClient struct {
+type Client struct {
 	Con           net.Conn
 	TransactionID uint32
 	ConnectionID  uint64
 }
 
-func (t *TrackerClient) readConnectResponse() (uint64, error) {
+func (t *Client) readConnectResponse() (uint64, error) {
 	buf := make([]byte, 16)
 	t.Con.Read(buf)
 	conResponse, err := requests.UnmarshalConnectResponse(buf)
 	return conResponse.ConnectionID, err
 }
 
-func (t *TrackerClient) Connect() error {
+func (t *Client) Connect() error {
 	conRequest := requests.ConnectionRequest()
 	requestBuffer := conRequest.MarshalBinary()
 	if _, err := t.Con.Write(requestBuffer); err != nil {
@@ -33,7 +33,7 @@ func (t *TrackerClient) Connect() error {
 	return nil
 }
 
-func (t *TrackerClient) Announce(infoHash []byte, peerID []byte) (requests.AnnounceResponse, error) {
+func (t *Client) Announce(infoHash []byte, peerID []byte) (requests.AnnounceResponse, error) {
 	requestBuffer := requests.CreateAnnounceRequest(infoHash, peerID, t.ConnectionID)
 	t.Con.Write(requestBuffer.MarshalBinary())
 	resultBuffer := make([]byte, 320)

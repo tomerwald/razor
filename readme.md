@@ -23,5 +23,9 @@ the content of commands and uploaded files will not be in clear text
 
 * To a BitTorrent expert the communication will look odd
 but anyone who didn't read the protocol documentation would not find a difference
-     
+    
+documentation:
+UDP tracker protocol - http://xbtt.sourceforge.net/udp_tracker_protocol.html
+BitTorrent protocol - wiki.theory.org/index.php/BitTorrentSpecification
+offical protocol specs - http://www.bittorrent.org/
     

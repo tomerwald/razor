@@ -14,13 +14,14 @@ import (
 	"./tracker"
 )
 
-type PeerManger struct {
+// PeerManager will manage the tracking and connection to controller peers
+type PeerManager struct {
 	ManConfig  config.ManagerConfig
 	PeerConfig config.PeerConfig
 	Cipher     cipher.Block
 }
 
-func (pm *PeerManger) handleClient(con net.Conn) {
+func (pm *PeerManager) handleClient(con net.Conn) {
 	log.Printf("Handling client %s\r\n", con.RemoteAddr().String())
 	rc := razor.NewRazorClient(con, &pm.PeerConfig, &pm.Cipher)
 	defer rc.Peer.Disconnect()
@@ -29,7 +30,7 @@ func (pm *PeerManger) handleClient(con net.Conn) {
 	}
 }
 
-func (pm *PeerManger) connectToControllers(controllers []string) {
+func (pm *PeerManager) connectToControllers(controllers []string) {
 	for _, ip := range controllers {
 		con, err := net.Dial("tcp", ip)
 		if err != nil {
@@ -39,12 +40,12 @@ func (pm *PeerManger) connectToControllers(controllers []string) {
 		}
 	}
 }
-func (pm *PeerManger) getControllers() []string {
+func (pm *PeerManager) getControllers() []string {
 	var controllers []string
 	for _, trackerIP := range pm.ManConfig.Trackers {
 		log.Printf("Quering tracker: %s\n", trackerIP)
 		con, ResError := net.Dial("udp", trackerIP)
-		tc := tracker.TrackerClient{con, 9, 0}
+		tc := tracker.Client{con, 9, 0}
 		if ResError == nil {
 			err := tc.Connect()
 			if err == nil {
@@ -61,7 +62,8 @@ func (pm *PeerManger) getControllers() []string {
 	return controllers
 }
 
-func (pm *PeerManger) StartBC() {
+// StartBC will start periodicly searching for controller peers
+func (pm *PeerManager) StartBC() {
 	for i := 0; i < 100; i++ {
 		controllers := pm.getControllers()
 		log.Printf("Found %d controllers", len(controllers))
@@ -88,7 +90,7 @@ func main() {
 		BlockSize:   16384,
 		PieceSize:   51 * 16384,
 	}
-	pm := PeerManger{
+	pm := PeerManager{
 		ManConfig:  mc,
 		PeerConfig: pc,
 		Cipher:     enc,
