@@ -79,7 +79,7 @@ func main() {
 	enc, _ := aes.NewCipher(key[:])
 	mc := config.ManagerConfig{
 		Address:          "127.0.0.1:6888",
-		AnnounceInterval: 5000 * time.Millisecond,
+		AnnounceInterval: 10000 * time.Millisecond,
 		Trackers:         []string{"127.0.0.1:6969"},
 	}
 	pc := config.PeerConfig{

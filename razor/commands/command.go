@@ -5,12 +5,12 @@ import (
 )
 
 const (
-	Exec   = 1
-	Upload = 2
+	Exec        = 1
+	Upload      = 2
 	StartTunnel = 3
-	SendOT = 4
-	RecvOT = 5
-	StopTunnel = 6
+	SendOT      = 4
+	RecvOT      = 5
+	StopTunnel  = 6
 )
 
 type commandError struct {

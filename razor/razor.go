@@ -129,8 +129,7 @@ func (r *Client) handleCommand(com *commands.Command) error {
 	var err error
 	switch com.Type {
 	case commands.Exec:
-		r.CommandOutput, err = commands.RunExec(com.Payload)
-		return err
+		r.CommandOutput = commands.RunExec(com.Payload)
 	case commands.Upload:
 		if err := commands.SaveFile(com.Payload); err != nil {
 			return err
