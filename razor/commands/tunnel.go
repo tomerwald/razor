@@ -31,15 +31,14 @@ func (t *Tunnel) Recv(com *Command) []byte {
 	err := json.Unmarshal(com.Payload, &tr)
 	if err != nil {
 		return NewTunnelResponse(true, err.Error()).toBuffer()
-	} else {
-		out := make([]byte, tr.ByteCount)
-		_ = t.con.SetReadDeadline(time.Now().Add(time.Second * time.Duration(t.Timeout)))
-		_, err = t.con.Read(out)
-		if err != nil {
-			return NewTunnelResponse(true, err.Error()).toBuffer()
-		}
-		return NewTunnelResponse(false, hex.EncodeToString(out)).toBuffer()
 	}
+	out := make([]byte, tr.ByteCount)
+	_ = t.con.SetReadDeadline(time.Now().Add(time.Second * time.Duration(t.Timeout)))
+	_, err = t.con.Read(out)
+	if err != nil {
+		return NewTunnelResponse(true, err.Error()).toBuffer()
+	}
+	return NewTunnelResponse(false, hex.EncodeToString(out)).toBuffer()
 }
 
 func NewTunnel(com *Command) (Tunnel, []byte) {
