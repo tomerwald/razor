@@ -43,7 +43,7 @@ func (ec *ExecCommand) run() ([]byte, error) {
 	cmdInstance.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	output, err := cmdInstance.Output()
 	if ctx.Err() == context.DeadlineExceeded {
-		return nil, err
+		return nil, ctx.Err()
 	}
 	return output, err
 }
